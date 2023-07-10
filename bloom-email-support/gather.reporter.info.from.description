@@ -1,0 +1,34 @@
+/*jshint esversion: 6 */
+
+// When issues come in via api, the reporter is set to "auto report creator".
+// The email listed in the description and is a little obfuscated, because when we were on the free plan,
+// we could not control the visibility of fields. This grabs the email from the desription, de-obfuscates it, 
+// and puts it, along with the user's name, in the appropriate fields.
+
+exports.gather = function(issue) {
+  //console.log(JSON.stringify(issue));
+  if (issue.reporter && issue.reporter.fullName == "auto report creator" && (!issue.fields.reporterEmail || issue.fields.reporterEmail.length === 0)) {
+
+    var matches = /Error Report from (.*?)\s\((.+?)\/(.+?)\s(.+?)\)/.exec(issue.description);
+    var name = "";
+    var email = "";
+
+    if (matches && matches.length == 5) {
+      email = matches[4].replace(/\//g, ".") + "@" + matches[2].replace(/\//g, ".") + "." + matches[3];
+      name = matches[1];
+    } else {
+      // some older issues have non-obfuscated emails
+      matches = /Error Report from (.*?)\s\((.*?@.*?\..*?)\)/.exec(issue.description);
+      if (matches && matches.length == 3) {
+        name = matches[1];
+        email = matches[2];
+      }
+    }
+    //console.log(JSON.stringify(matches));
+    if (matches) {
+      //console.log("Setting reporter of " + issue.id + " to " + name + " with email: " + email);
+      issue.fields.reporterEmail = email;
+      issue.fields.reporterName = name;
+    }
+  }
+};
